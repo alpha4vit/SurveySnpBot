@@ -1,5 +1,6 @@
 package by.gurinovich.surveybotsnp;
 
+import by.gurinovich.surveybotsnp.dao.survey.SurveyDao;
 import by.gurinovich.surveybotsnp.dao.user.UserDao;
 import by.gurinovich.surveybotsnp.model.bot.MessageType;
 import by.gurinovich.surveybotsnp.model.bot.ResponseType;
@@ -11,6 +12,8 @@ import by.gurinovich.surveybotsnp.service.bot.impl.MessageRequestHandler;
 import by.gurinovich.surveybotsnp.service.bot.impl.MessageSender;
 import by.gurinovich.surveybotsnp.service.report.ReportService;
 import by.gurinovich.surveybotsnp.service.survey.SurveyService;
+import by.gurinovich.surveybotsnp.service.survey.impl.CachedSurveyService;
+import by.gurinovich.surveybotsnp.service.survey.impl.SurveyServiceImpl;
 import by.gurinovich.surveybotsnp.service.user.UserService;
 import by.gurinovich.surveybotsnp.service.user.impl.CachedUserService;
 import by.gurinovich.surveybotsnp.service.user.impl.UserServiceImpl;
@@ -49,11 +52,19 @@ public class SurveyBotContainerBindings {
     }
 
     @Bean
-    public UserService userDao(UserDao userDao) {
+    public UserService userService(UserDao userDao) {
         return new CachedUserService(
                 new UserServiceImpl(userDao)
         );
     }
+
+    @Bean
+    public SurveyService surveyService(SurveyDao surveyDao) {
+        return new CachedSurveyService(
+                new SurveyServiceImpl(surveyDao)
+        );
+    }
+
 
     @Bean
     public Map<ResponseType, DirectSender> responseSenders(

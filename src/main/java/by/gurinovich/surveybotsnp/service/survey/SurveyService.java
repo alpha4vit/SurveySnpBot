@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface SurveyService {
     Survey createOrResetActive(User user);
 
-    Optional<Survey> findActive(User user);
+    Survey findActive(User user);
 
     Survey update(Survey survey);
 

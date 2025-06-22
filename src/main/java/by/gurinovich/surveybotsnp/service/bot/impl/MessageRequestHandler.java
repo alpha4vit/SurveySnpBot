@@ -55,9 +55,7 @@ public class MessageRequestHandler implements RequestHandler {
     private ResponsePayload handleMessage(RequestContext context) {
         var user = userService.getByChatId(context.chatId());
 
-        var survey = surveyService.findActive(user).orElseThrow(
-                () -> SurveyBotDomainLogicException.notHandledCommand(context.chatId())
-        );
+        var survey = surveyService.findActive(user);
 
         var message = switch (survey.state) {
             case NAME -> {

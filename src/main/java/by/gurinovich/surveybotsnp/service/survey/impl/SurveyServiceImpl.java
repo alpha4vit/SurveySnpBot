@@ -1,21 +1,19 @@
 package by.gurinovich.surveybotsnp.service.survey.impl;
 
 import by.gurinovich.surveybotsnp.dao.survey.SurveyDao;
-import by.gurinovich.surveybotsnp.model.user.User;
+import by.gurinovich.surveybotsnp.exception.SurveyBotDomainLogicException;
 import by.gurinovich.surveybotsnp.model.survey.Survey;
 import by.gurinovich.surveybotsnp.model.survey.SurveyState;
+import by.gurinovich.surveybotsnp.model.user.User;
 import by.gurinovich.surveybotsnp.service.survey.SurveyService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static by.gurinovich.surveybotsnp.model.survey.SurveyState.*;
 
-@Service
 @Transactional
 @RequiredArgsConstructor
 public class SurveyServiceImpl implements SurveyService {
@@ -41,8 +39,11 @@ public class SurveyServiceImpl implements SurveyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Survey> findActive(final User user) {
-        return surveyDao.findByStatesAndChatId(user.getChatId(), activeStates);
+    public Survey findActive(final User user) {
+        return surveyDao.findByStatesAndChatId(user.getChatId(), activeStates).orElseThrow(
+                () -> SurveyBotDomainLogicException.notHandledCommand(user.getChatId())
+        );
+
     }
 
     @Override
@@ -51,6 +52,7 @@ public class SurveyServiceImpl implements SurveyService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Survey> findAllCompleted(final Long chatId) {
         return surveyDao.findAllByChatIdAndState(chatId, COMPLETED);
     }
