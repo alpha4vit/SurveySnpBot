@@ -8,8 +8,10 @@ import by.gurinovich.surveybotsnp.model.bot.ResponsePayload;
 import by.gurinovich.surveybotsnp.model.bot.ResponseType;
 import by.gurinovich.surveybotsnp.service.bot.DirectSender;
 import by.gurinovich.surveybotsnp.service.bot.RequestHandler;
+import by.gurinovich.surveybotsnp.service.bot.impl.AsyncRunner;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -18,6 +20,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SurveyBot extends TelegramLongPollingBot {
@@ -25,27 +28,24 @@ public class SurveyBot extends TelegramLongPollingBot {
     private final SurveyBotConfig botConfig;
     private final RequestHandler requestHandler;
     private final Map<ResponseType, DirectSender> responseSenders;
+    private final AsyncRunner asyncRunner;
 
-    @SneakyThrows
     @Override
+    @SneakyThrows
     public void onUpdateReceived(final Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             var context = mapToRequestContext(update.getMessage());
 
-            try {
-                var response = requestHandler.handle(context);
+            asyncRunner.runAsync(() -> {
+                        try {
+                            var response = requestHandler.handle(context);
 
-                getSender(context.chatId(), response.type()).send(response);
-            } catch (Throwable t) {
-                getSender(context.chatId(), ResponseType.TEXT)
-                        .send(
-                                new ResponsePayload(
-                                        context.chatId(),
-                                        t.getMessage(),
-                                        ResponseType.TEXT
-                                )
-                        );
-            }
+                            getSender(context.chatId(), response.type()).send(response);
+                        } catch (Throwable t) {
+                            sendErrorMessage(context.chatId(), t.getMessage());
+                        }
+                    }
+            );
         }
     }
 
@@ -88,6 +88,22 @@ public class SurveyBot extends TelegramLongPollingBot {
                 MessageType.MESSAGE,
                 message.getText()
         );
+    }
+
+    private void sendErrorMessage(Long chatId, String message) {
+        try {
+            getSender(chatId, ResponseType.TEXT)
+                    .send(
+                            new ResponsePayload(
+                                    chatId,
+                                    message,
+                                    ResponseType.TEXT
+                            )
+                    );
+
+        } catch (Throwable t) {
+            log.error(t.getMessage());
+        }
     }
 
 }
